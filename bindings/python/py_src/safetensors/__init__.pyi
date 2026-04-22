@@ -35,7 +35,9 @@ def deserialize(bytes):
     pass
 
 @staticmethod
-def mps_load_safetensors(filename: Union[str, "os.PathLike[str]"]) -> Dict[str, "torch.Tensor"]:
+def mps_load_safetensors(
+    filename: Union[str, "os.PathLike[str]"],
+) -> Dict[str, "torch.Tensor"]:
     """
     macOS/MPS only. Parses the safetensors header, bulk-allocates every tensor
     on the MPS device, then releases the GIL and uses multiple OS threads that

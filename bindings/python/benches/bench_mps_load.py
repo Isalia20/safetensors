@@ -14,11 +14,11 @@ from safetensors.torch import load_file, save_file
 
 
 def create_llm(total_gb: float) -> dict[str, torch.Tensor]:
-    H, I, V, BPE = 4096, 12288, 151936, 2
+    H, I, V, BPE = 4096, 12288, 151936, 2  # noqa: E741
     Q, KV = 32 * 128, 8 * 128
     fixed = (2 * V * H + H) * BPE
     per_layer = (H * Q + 2 * H * KV + Q * H + 3 * H * I + 2 * H) * BPE
-    n = max(1, int((total_gb * 1024 ** 3 - fixed) / per_layer))
+    n = max(1, int((total_gb * 1024**3 - fixed) / per_layer))
     d = torch.bfloat16
     t: dict[str, torch.Tensor] = {
         "model.embed_tokens.weight": torch.empty((V, H), dtype=d),
@@ -51,10 +51,15 @@ def force_slow():
 
 
 def purge() -> bool:
-    return subprocess.run(
-        ["sudo", "-n", "purge"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30,
-    ).returncode == 0
+    return (
+        subprocess.run(
+            ["sudo", "-n", "purge"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=30,
+        ).returncode
+        == 0
+    )
 
 
 def time_one(path: str, fast: bool) -> float:
@@ -73,8 +78,9 @@ def time_one(path: str, fast: bool) -> float:
 
 def bench(path: str, iters: int, cold: bool) -> None:
     n = os.path.getsize(path)
-    print(f"\nFile: {path}  ({n / 1024 ** 3:.2f} GB)\nwarmup...")
-    time_one(path, False); time_one(path, True)
+    print(f"\nFile: {path}  ({n / 1024**3:.2f} GB)\nwarmup...")
+    time_one(path, False)
+    time_one(path, True)
 
     rows = []
     for label, fast in (("slow (safe_open)", False), ("fast (MPSBulkLoad)", True)):
@@ -85,12 +91,14 @@ def bench(path: str, iters: int, cold: bool) -> None:
                 cold = False
             dt = time_one(path, fast)
             ts.append(dt)
-            print(f"  {label:20s} {i+1}/{iters}: {dt:6.3f}s  ({n/dt/1024**3:5.2f} GB/s)")
+            print(
+                f"  {label:20s} {i + 1}/{iters}: {dt:6.3f}s  ({n / dt / 1024**3:5.2f} GB/s)"
+            )
         rows.append((label, min(ts), sum(ts) / len(ts)))
 
     print(f"\n  {'path':22s} {'best':>8s} {'mean':>8s} {'GB/s':>8s}")
     for lbl, b, m in rows:
-        print(f"  {lbl:22s} {b:6.3f}s {m:6.3f}s {n/b/1024**3:8.2f}")
+        print(f"  {lbl:22s} {b:6.3f}s {m:6.3f}s {n / b / 1024**3:8.2f}")
     print(f"\n  speedup: {rows[0][1] / rows[1][1]:.2f}x")
 
 
@@ -112,8 +120,10 @@ def main() -> None:
         print(f"Generating {path} ({a.gb} GB target) ...")
         t0 = time.perf_counter()
         save_file(create_llm(a.gb), path)
-        print(f"  wrote {os.path.getsize(path) / 1024 ** 3:.2f} GB "
-              f"in {time.perf_counter() - t0:.1f}s")
+        print(
+            f"  wrote {os.path.getsize(path) / 1024**3:.2f} GB "
+            f"in {time.perf_counter() - t0:.1f}s"
+        )
     bench(path, a.iters, a.cold)
 
 

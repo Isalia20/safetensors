@@ -33,7 +33,7 @@ static PADDLE_MODULE: OnceLock<Py<PyModule>> = OnceLock::new();
 /// The dtype string is validated at construction; an unknown dtype raises
 /// immediately rather than failing further inside the serializer.
 ///
-/// `shape` is the logical (header) shape - the number of elements along each
+/// `shape` is the logical (header) shape — the number of elements along each
 /// axis as recorded in the safetensors header. For packed dtypes like
 /// `float4_e2m1fn_x2` (two F4 values per byte), callers may pass the storage
 /// shape reported by their framework (e.g. `torch.Size`); the constructor
@@ -86,7 +86,7 @@ impl TensorSpec {
         format!("{}", self.dtype)
     }
 
-    /// The tensor's logical shape - the element-count shape recorded in the
+    /// The tensor's logical shape — the element-count shape recorded in the
     /// safetensors header. For packed dtypes like `float4_e2m1fn_x2`, this is
     /// the last-dim-doubled version of whatever was passed to the constructor.
     #[getter]
@@ -1755,9 +1755,9 @@ fn mps_load_safetensors(py: Python<'_>, filename: PathBuf) -> PyResult<Py<PyDict
     let mut host_aliases: Vec<PyBound<'_, PyAny>> = Vec::with_capacity(keys.len());
     let mut jobs: Vec<Job> = Vec::with_capacity(keys.len());
     for name in keys {
-        let info = metadata.info(&name).ok_or_else(|| {
-            SafetensorError::new_err(format!("Missing tensor info for {name}"))
-        })?;
+        let info = metadata
+            .info(&name)
+            .ok_or_else(|| SafetensorError::new_err(format!("Missing tensor info for {name}")))?;
         let dtype_obj: Py<PyAny> = get_pydtype(&torch, info.dtype, false)?;
 
         // F4 stores two elements per byte; torch shape halves the last dim.
@@ -1842,10 +1842,7 @@ fn mps_load_safetensors(py: Python<'_>, filename: PathBuf) -> PyResult<Py<PyDict
                         // SAFETY: each job owns a distinct tensor kept alive
                         // by `mps_tensors` until after `py.detach` returns.
                         let buf = unsafe {
-                            std::slice::from_raw_parts_mut(
-                                job.write_ptr as *mut u8,
-                                job.nbytes,
-                            )
+                            std::slice::from_raw_parts_mut(job.write_ptr as *mut u8, job.nbytes)
                         };
                         file.read_exact_at(buf, job.file_offset)
                             .map_err(|e| (job.name.clone(), e))?;
@@ -1874,7 +1871,7 @@ fn mps_load_safetensors(py: Python<'_>, filename: PathBuf) -> PyResult<Py<PyDict
     let _ = mps_mod.call_method0(intern!(py, "synchronize"));
 
     let result = PyDict::new(py);
-    for (job, tensor) in jobs.iter().zip(mps_tensors.into_iter()) {
+    for (job, tensor) in jobs.iter().zip(mps_tensors) {
         result.set_item(&job.name, tensor)?;
     }
 
