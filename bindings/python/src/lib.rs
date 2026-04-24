@@ -545,6 +545,7 @@ impl Version {
 }
 
 struct Open {
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     filename: PathBuf,
     metadata: Metadata,
     offset: usize,
