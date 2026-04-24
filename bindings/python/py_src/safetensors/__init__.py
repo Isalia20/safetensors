@@ -9,9 +9,3 @@ from ._safetensors_rust import (  # noqa: F401
     serialize,
     serialize_file,
 )
-
-try:
-    from ._safetensors_rust import mps_load_safetensors  # noqa: F401
-except ImportError:
-    # Only built on macOS targets.
-    mps_load_safetensors = None

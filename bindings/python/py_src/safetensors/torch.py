@@ -7,7 +7,6 @@ import torch
 from safetensors import (
     TensorSpec,
     deserialize,
-    mps_load_safetensors as _mps_load_safetensors,
     safe_open,
     serialize,
     serialize_file,
@@ -321,14 +320,6 @@ def save_file(
     )
 
 
-def _is_mps_device(device: Union[str, int, torch.device]) -> bool:
-    if isinstance(device, torch.device):
-        return device.type == "mps" and device.index in (None, 0)
-    if isinstance(device, str):
-        return device == "mps" or device == "mps:0"
-    return False
-
-
 def load_file(
     filename: Union[str, os.PathLike], device: Union[str, int] = "cpu"
 ) -> Dict[str, torch.Tensor]:
@@ -354,19 +345,8 @@ def load_file(
     loaded = load_file(file_path)
     ```
     """
-    # Fast path: parallel pread straight into MPS buffers via host-alias storage
-    if (
-        _is_mps_device(device)
-        and _mps_load_safetensors is not None
-        and hasattr(torch, "mps")
-        and hasattr(torch.mps, "_host_alias_storage")
-    ):
-        return _mps_load_safetensors(os.fspath(filename))
-    result = {}
     with safe_open(filename, framework="pt", device=device) as f:
-        for k in f.offset_keys():
-            result[k] = f.get_tensor(k)
-    return result
+        return f.get_tensors()
 
 
 def load(data: bytes) -> Dict[str, torch.Tensor]:

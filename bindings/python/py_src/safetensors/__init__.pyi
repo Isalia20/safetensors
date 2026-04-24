@@ -11,10 +11,7 @@
 # That generator emits typed stubs directly from Rust
 # signatures — no hand-editing, no drift.
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Union
-
-if TYPE_CHECKING:
-    import torch
+from typing import Dict, List, Optional, Sequence, Union
 
 __version__: str
 
@@ -31,20 +28,6 @@ def deserialize(bytes):
         (`List[str, Dict[str, Dict[str, any]]]`):
             The deserialized content is like:
                 [("tensor_name", {"shape": [2, 3], "dtype": "F32", "data": b"\0\0.." }), (...)]
-    """
-    pass
-
-@staticmethod
-def mps_load_safetensors(
-    filename: Union[str, "os.PathLike[str]"],
-) -> Dict[str, "torch.Tensor"]:
-    """
-    macOS/MPS only. Parses the safetensors header, bulk-allocates every tensor
-    on the MPS device, then releases the GIL and uses multiple OS threads that
-    each call `pread(2)` to fill the pre-allocated unified-memory buffers in
-    parallel.
-
-    Returns a `{name: torch.Tensor(device='mps')}` dict.
     """
     pass
 
@@ -238,6 +221,31 @@ class safe_open:
 
         with safe_open("model.safetensors", framework="pt", device=0) as f:
             tensor = f.get_tensor("embedding")
+
+        ```
+        """
+        pass
+
+    def get_tensors(self):
+        """
+        Returns every tensor in the file as a dict keyed by name.
+
+        Equivalent to iterating `offset_keys()` and calling `get_tensor` on
+        each, but specific `framework` + `device` combinations can take an
+        internal fast path (e.g. MPS with PyTorch ≥ 2.10's
+        `_host_alias_storage` bulk-allocates and fills tensors with parallel
+        `pread(2)`).
+
+        Returns:
+            (`Dict[str, Tensor]`):
+                A dict of all tensors in the file.
+
+        Example:
+        ```python
+        from safetensors import safe_open
+
+        with safe_open("model.safetensors", framework="pt", device="mps") as f:
+            state_dict = f.get_tensors()
 
         ```
         """
